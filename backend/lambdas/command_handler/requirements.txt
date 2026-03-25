@@ -1,0 +1,1 @@
+# Neste MVP a Lambda usa apenas bibliotecas padrão e o boto3 disponível no runtime AWS Lambda.
