@@ -8,3 +8,6 @@ terraform.tfstate.*
 .terraform/
 *.tfvars
 .DS_Store
+*.zip
+tfplan
+response.json
