@@ -66,6 +66,15 @@ resource "aws_iam_role_policy" "dynamodb_access" {
           "dynamodb:DescribeTable"
         ]
         Resource = aws_dynamodb_table.tracker_history.arn
+      },
+      {
+        Sid    = "TrackerTelemetryTableAccess"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:Query",
+          "dynamodb:DescribeTable"
+        ]
+        Resource = aws_dynamodb_table.tracker_telemetry.arn
       }
     ]
   })
@@ -98,6 +107,15 @@ resource "aws_iam_role_policy" "simulator_dynamodb_access" {
           "dynamodb:DescribeTable"
         ]
         Resource = aws_dynamodb_table.tracker_history.arn
+      },
+      {
+        Sid    = "TrackerTelemetryWriteAccess"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:DescribeTable"
+        ]
+        Resource = aws_dynamodb_table.tracker_telemetry.arn
       }
     ]
   })

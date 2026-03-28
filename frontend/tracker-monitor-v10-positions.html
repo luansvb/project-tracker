@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Monitor · Alertas</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand: #0f766e; 
+  --brand-dk: #115e59;
+  --brand-light: #ccfbf1;
+  --sidebar-bg: #ffffff; 
+  --sidebar-border: #e2e8f0;
+  --bg: #f8fafc; 
+  --white: #ffffff; 
+  --border: #e2e8f0;
+  --text: #1e293b; 
+  --muted: #64748b; 
+  --row-h: 38px;
+  --c-red: #ef4444; 
+  --c-orange: #f97316; 
+  --c-green: #22c55e;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:var(--bg)}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.app{display:grid;grid-template-columns:64px 1fr;height:100vh}
+
+.sidebar{background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:8px;z-index: 10;}
+.brand{width:48px;height:24px;margin-bottom: 12px;display:grid;place-items:center;font:900 9.5px 'Inter';color:#0284c7;letter-spacing:.05em;background:#e0f2fe;border-radius:6px;}
+.si{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;color:#94a3b8;cursor:pointer;position:relative;transition:all .2s ease;}
+.si:hover{background:#f1f5f9;color:#475569}
+.si.on{color:var(--brand);background:var(--brand-light);box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.1);}
+.si svg{width:20px;height:20px}
+.sg{flex:1}
+
+.ws{display:grid;grid-template-rows:minmax(240px,1fr) 6px minmax(220px,42vh);height:100vh;min-width:0;background:var(--bg)}
+.mz{position:relative;min-height:0;border-bottom:1px solid var(--border)}
+#map{width:100%;height:100%; z-index: 1;}
+
+.layer-sw{position:absolute;right:16px;top:16px;z-index:2;display:flex;background:rgba(255,255,255,.95);backdrop-filter: blur(8px);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05);overflow:hidden}
+.lb{height:38px;padding:0 16px;border:none;background:transparent;color:#475569;font:600 11.5px 'Inter';cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s}
+.lb+.lb{border-left:1px solid var(--border)}
+.lb.on{background:var(--brand);color:#fff}
+.lb svg{width:14px;height:14px}
+
+.toast-stack{position:absolute;right:16px;top:64px;z-index:600;display:flex;flex-direction:column;gap:8px;width:min(420px,34vw);pointer-events:none}
+.toast{display:grid;grid-template-columns:30px 1fr 24px;align-items:center;height:44px;border-radius:8px;color:#fff;font:600 12.5px 'Inter';pointer-events:auto;cursor:pointer;overflow:hidden;animation:toastIn .2s cubic-bezier(0.16, 1, 0.3, 1) forwards;box-shadow:0 10px 15px -3px rgba(0,0,0,.1);}
+.toast.red{background:var(--c-red);}
+.toast.orange{background:var(--c-orange);}
+.toast.green{background:var(--c-green);}
+.toast.black{background:#1e293b;border-left:4px solid var(--c-red); box-shadow:0 10px 15px -3px rgba(0,0,0,.2), 0 0 15px rgba(239, 68, 68, 0.2);}
+.ti{display:grid;place-items:center;font-size:16px;opacity:.9;padding-left:10px}
+.tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;}
+.tx{display:grid;place-items:center;font:400 18px 'Inter';opacity:.6;padding-right:10px;transition:opacity .2s;}
+.tx:hover{opacity:1}
+@keyframes toastIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+
+.splitter{background:#e2e8f0;cursor:row-resize;position:relative; transition: background .2s;}
+.splitter:hover{background:#cbd5e1;}
+.splitter::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:4px;border-radius:2px;background:#94a3b8}
+
+.az{display:grid;grid-template-rows:44px 48px 1fr 44px;background:var(--white);min-height:0;overflow:hidden;}
+.tabs{display:flex;align-items:flex-end;gap:24px;padding:0 20px;border-bottom:1px solid var(--border);overflow-x:auto;background:var(--white)}
+.tab{height:44px;padding:0 4px;display:inline-flex;align-items:center;gap:6px;font:600 12.5px 'Inter';color:#64748b;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;transition: all .2s;}
+.tab:hover{color:#334155}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#cbd5e1;font:700 10px 'Inter';color:#fff;display:inline-grid;place-items:center}
+.badge.alert{background:var(--c-red)}
+
+.toolbar{display:flex;align-items:center;gap:12px;padding:0 20px;background:var(--white);border-bottom:1px solid var(--border)}
+.treat-launch{width:42px;height:42px;border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 6px -1px rgba(15,118,110,.2);transition:all .2s;flex:0 0 auto}
+.treat-launch svg{width:20px;height:20px;stroke-width:2}
+.treat-launch:hover:not(:disabled){background:var(--brand-dk);border-color:var(--brand-dk); transform:translateY(-1px)}
+.treat-launch:disabled{opacity:.4;cursor:not-allowed;background:#f1f5f9;border-color:var(--border);color:#94a3b8;box-shadow:none;transform:none}
+.search{display:flex; align-items: center; gap: 8px; flex: 1; max-width: 400px; height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; background: #f8fafc;}
+.search svg{width:14px;height:14px;color:#94a3b8;}
+.search input{border:none;background:transparent;outline:none;font:400 13px 'Inter';color:var(--text);width:100%}
+.search input::placeholder{color:#94a3b8}
+
+.chip{height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--border);background:#f8fafc;font:600 12px 'Inter';color:#475569;display:flex;align-items:center;gap:6px;margin-left:12px}
+.sb{height:30px;padding:0 12px;border-radius:6px;font:600 11.5px 'Inter';cursor:pointer;border:1px solid; transition: filter .2s;}
+.sb:hover{filter: brightness(0.95);}
+.toolbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+.tw{min-height:0;overflow:auto;position:relative}
+table{width:100%;border-collapse:separate; border-spacing: 0; white-space:nowrap}
+thead th{position:sticky;top:0;z-index:4;background:rgba(248,250,252,0.95);backdrop-filter: blur(4px);padding:8px 10px;font:600 11px 'Inter';color:#64748b;text-align:left;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.05em}
+thead th.ic{text-align:center;padding:8px 4px}
+
+tbody tr{cursor:pointer;transition:all .15s}
+tbody td{height:var(--row-h);padding:0 10px;font:500 12.5px 'Inter';border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;}
+tbody tr:hover td{filter:brightness(.96)}
+
+tbody tr.p-black td{background:#1e293b;color:#f8fafc;border-bottom:1px solid #0f172a}
+tbody tr.p-black td:first-child{box-shadow: inset 4px 0 0 var(--c-red);}
+tbody tr.p-black.sel td {background:#334155 !important; border-bottom:1px solid #475569 !important;}
+
+tbody tr.p-red td{background:var(--c-red);color:#fff;border-bottom:1px solid #dc2626}
+tbody tr.p-red td:first-child{box-shadow: inset 4px 0 0 #991b1b;}
+tbody tr.p-red.sel td {background:#f87171 !important; border-bottom:1px solid #fca5a5 !important;}
+
+tbody tr.p-orange td{background:var(--c-orange);color:#fff;border-bottom:1px solid #ea580c}
+tbody tr.p-orange td:first-child{box-shadow: inset 4px 0 0 #c2410c;}
+tbody tr.p-orange.sel td {background:#fb923c !important; border-bottom:1px solid #fdba74 !important;}
+
+tbody tr.p-green td{background:var(--c-green);color:#fff;border-bottom:1px solid #16a34a}
+tbody tr.p-green td:first-child{box-shadow: inset 4px 0 0 #15803d;}
+tbody tr.p-green.sel td {background:#4ade80 !important; border-bottom:1px solid #86efac !important;}
+
+.ec{display:flex;align-items:center;gap:10px;max-width:280px}
+.edot{width:10px;height:10px;border-radius:50%;flex:0 0 auto; box-shadow: 0 0 0 2px rgba(255,255,255,0.3);}
+.p-black .edot{background:#ef4444;animation:dp 1.5s infinite;box-shadow:0 0 0 3px rgba(239,68,68,.3)}
+.p-red .edot{background:#fff;}
+.p-orange .edot{background:#fff;}
+.p-green .edot{background:#fff;}
+.etxt{font-weight: 600; overflow:hidden;text-overflow:ellipsis}
+@keyframes dp{0%,100%{transform:scale(1)}50%{transform:scale(1.4);opacity:.8}}
+
+.ic{text-align:center}
+.sat{font:600 12px 'Inter';color:inherit;display:inline-block;min-width:18px;text-align:center}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;vertical-align:middle}
+.dot-r{background:#fff; opacity:0.6}.dot-g{background:#fff; box-shadow: 0 0 8px #fff}
+.spd{font:500 12px 'Inter';color:inherit;white-space:nowrap}
+
+.gmaps-link {
+  color: var(--brand); display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,0.2); color: #fff; transition: all 0.2s;
+}
+.gmaps-link:hover { background: #fff; color: var(--text); }
+
+.footer{display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-top:1px solid var(--border);background:var(--white);font:500 12px 'Inter';color:var(--muted)}
+.footer select{height:28px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font:500 12px 'Inter';color:var(--text);padding:0 8px;margin-left:8px;outline:none;}
+.pager{display:flex;align-items:center;gap:10px}
+.pager button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--white);display:grid;place-items:center;cursor:pointer;color:#475569; transition: background .2s;}
+.pager button:hover:not(:disabled){background:#f1f5f9;}
+.pager button:disabled{opacity:.4;cursor:default}
+
+/* DETAIL POPUP */
+.dov{position:fixed;inset:0;background:rgba(15,23,42,.3);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:699}
+.dov.open{opacity:1;pointer-events:auto}
+.detail{position:fixed;left:50%;top:50%;transform:translate(-50%,-48%) scale(.96);width:min(640px,calc(100vw - 32px));max-height:min(560px,calc(100vh - 80px));background:var(--white);border:1px solid var(--border);border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:all .2s cubic-bezier(0.16, 1, 0.3, 1);z-index:700;overflow:hidden}
+.detail.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.dh{padding:20px 20px 0;border-bottom:1px solid var(--border);flex:0 0 auto;background:#f8fafc;}
+.dh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.dh-plate{font:800 20px 'Inter';letter-spacing:.05em;display:flex;align-items:center;gap:10px; color: var(--text)}
+.dh-actions{display:flex;align-items:center;gap:12px}
+.follow-btn{height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--brand);background:var(--brand-light);color:var(--brand-dk);font:600 13px 'Inter';display:flex;align-items:center;gap:8px;cursor:pointer; transition:all .2s}
+.follow-btn:hover{background:var(--brand);color:#fff;}
+.dh-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;display:grid;place-items:center;cursor:pointer;font-size:20px;color:var(--muted);line-height:1;transition:all .2s}
+.dh-close:hover{background:#f1f5f9;color:var(--c-red)}
+.dtabs{display:flex;gap:20px;overflow-x:auto}
+.dt{height:36px;padding:0 4px;font:600 12px 'Inter';color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;letter-spacing:.02em;transition:color .2s}
+.dt:hover{color:var(--text)}
+.dt.on{color:var(--brand);border-color:var(--brand)}
+.db{flex:1;min-height:0;overflow-y:auto;padding:20px}
+.ev-badge{padding:10px 14px;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font:600 13px 'Inter'}
+.ev-badge.bl{background:#1e293b;border:1px solid #334155;color:#f8fafc;}
+.ev-badge.re{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.ev-badge.or{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+.ev-badge.gr{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.ebd{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.dc{background:var(--bg);padding:14px; border-radius: 10px; border: 1px solid var(--border)}.dc:hover{background:#f1f5f9}.dc.w2{grid-column:span 2}
+.dl{font:600 11px 'Inter';color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.dv{font:500 14px 'Inter';color:var(--text);line-height:1.4}.dv.big{font:700 22px 'Inter'}.dv.mono{font-family: monospace; font-size:13px}
+.cmd-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmd-actions button{height:44px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font:600 13px 'Inter';cursor:pointer;color:#334155;transition:all .2s}
+.cmd-actions button:hover{background:#fff;border-color:var(--brand);color:var(--brand);box-shadow:0 2px 4px rgba(0,0,0,.02)}
+
+/* MODAL */
+.ov{position:fixed;inset:0;z-index:800;background:rgba(15,23,42,.4);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
+.ov.open{opacity:1;pointer-events:auto}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-48%) scale(.98);width:min(1400px,calc(100vw - 40px));height:min(860px,calc(100vh - 40px));background:var(--white);border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);z-index:801;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:all .2s cubic-bezier(0.16, 1, 0.3, 1);overflow:hidden}
+.modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.mbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;min-height:48px;background:#f8fafc;border-bottom:1px solid var(--border);font:500 13px 'Inter';color:var(--muted);gap:16px;flex:0 0 auto}
+.mbar-i{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.mx{width:32px;height:32px;border:none;background:transparent;cursor:pointer;font-size:24px;color:var(--muted);display:grid;place-items:center;border-radius:8px;transition:all .2s}
+.mx:hover{background:#e2e8f0; color: var(--c-red)}
+.mtabs{display:flex;padding:0 20px;border-bottom:1px solid var(--border);min-height:56px;align-items:flex-end;flex:0 0 auto; gap: 24px;}
+.mt{height:56px;padding:0 4px;font:600 13px 'Inter';color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap; display: flex; align-items: center; transition: color .2s;}
+.mt:hover{color: var(--text);}
+.mt.on{color:var(--brand);border-bottom-color:var(--brand)}
+.mbody{flex:1;min-height:0;overflow:auto;padding:24px; background: #f8fafc;}
+
+.m2col{display:grid;grid-template-columns:1fr 340px;gap:24px;min-height:100%}
+.mcard{border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column; background: #fff;}
+.mchead{display:flex;align-items:center;justify-content:space-between;padding:0 20px;min-height:48px;background:#f8fafc;border-bottom:1px solid var(--border);font:600 13px 'Inter';color:var(--text);flex:0 0 auto}
+.etw{flex:1;min-height:0;overflow:auto}
+.etbl{width:100%;border-collapse:collapse;min-width:600px}
+.etbl th,.etbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;text-align:left;white-space:nowrap}
+.etbl th{background:#f8fafc;font:600 11px 'Inter';color:var(--muted);position:sticky;top:0;z-index:2;text-transform:uppercase;letter-spacing:.05em}
+.etbl tbody tr:hover td{background:#f1f5f9}
+.etbl .cc{width:40px;text-align:center}
+.etbl input[type=checkbox]{accent-color:var(--brand); width: 16px; height: 16px; cursor: pointer;}
+.clayout{display:grid;grid-template-columns:1fr 300px;gap:20px;padding:20px;flex:0 0 auto; background: #f8fafc; border-top: 1px solid var(--border);}
+.clbl{font:600 11px 'Inter';color:var(--text);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.cbox{width:100%;min-height:100px;border:1px solid var(--border);border-radius:8px;background:#fff;padding:12px;font:400 13px 'Inter';color:var(--text);resize:vertical;outline:none; transition: border-color .2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02) inset;}
+.cbox:focus{border-color:var(--brand); box-shadow: 0 0 0 3px var(--brand-light);}
+.cbox.err{border-color:var(--c-red);background:#fef2f2}
+.cacts{display:flex;gap:10px;margin-top:12px}
+.bc{height:38px;padding:0 20px;border-radius:8px;border:1px solid transparent;font:600 13px 'Inter';cursor:pointer; transition: filter .2s;}
+.bc:hover{filter: brightness(0.95);}
+.bc-done{background:var(--brand);color:#fff; box-shadow: 0 4px 6px -1px rgba(15,118,110,0.2);}
+.hlist{border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:200px;overflow-y:auto; background: #fff;}
+.hrow{display:grid;grid-template-columns:1fr 70px 90px;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:start}
+.hrow:last-child{border-bottom:none}.hrow:hover{background:#f8fafc}
+.ht{font-weight:600;font-size:12.5px;margin-bottom:2px}.hd{font:500 11px 'Inter';color:var(--muted)}.hn{color:var(--muted);font-size:12px;word-break:break-word}
+.hs-d{color:var(--c-green);font-weight:600}.hs-p{color:#d97706;font-weight:600}.hs-a{color:#0284c7;font-weight:600}
+.scard{border:1px solid var(--border);border-radius:12px;overflow:hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
+.schead{padding:0 20px;min-height:48px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;font:600 13px 'Inter';color:var(--text)}
+.srow{display:grid;grid-template-columns:100px 1fr;gap:10px;padding:12px 20px;border-bottom:1px solid var(--border);font-size:13px}
+.srow:last-child{border-bottom:none}.sk{color:var(--muted);font-weight:600;font-size:12.5px}
+
+.placeholder-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); text-align: center; }
+.placeholder-content svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5; }
+.placeholder-content h3 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+
+/* Lista de comandos */
+.cmd-log-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.cmd-log-row:last-child { border-bottom: none; }
+
+/* VEHICLE MODAL — clique no marcador do mapa */
+.hidden { display: none !important; }
+
+.vehicle-modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(15,23,42,0.45); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.vehicle-box {
+  background: #fff; width: 480px; border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
+  overflow: hidden; display: flex; flex-direction: column;
+  max-height: calc(100vh - 80px);
+}
+.vehicle-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid var(--border);
+}
+.vehicle-header-left { display: flex; align-items: center; gap: 10px; }
+.vehicle-plate { font: 800 18px 'Inter'; letter-spacing: .08em; color: var(--text); }
+.vehicle-model { font: 500 12px 'Inter'; color: var(--muted); margin-top: 2px; }
+.vehicle-close {
+  width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px;
+  background: #fff; cursor: pointer; font-size: 18px; color: var(--muted);
+  display: grid; place-items: center; line-height: 1; transition: all .15s;
+}
+.vehicle-close:hover { background: #fee2e2; color: var(--c-red); border-color: #fca5a5; }
+
+.vehicle-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+  background: #fff; overflow-x: auto; flex-shrink: 0;
+}
+.vehicle-tabs button {
+  height: 40px; padding: 0 16px; border: none; background: transparent;
+  font: 600 11.5px 'Inter'; color: var(--muted); cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap;
+  transition: all .15s; letter-spacing: .03em;
+}
+.vehicle-tabs button:hover { color: var(--text); }
+.vehicle-tabs button.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+.vehicle-content { padding: 20px; overflow-y: auto; flex: 1; }
+
+.vinfo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.vinfo-cell {
+  background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 14px;
+}
+.vinfo-cell.full { grid-column: span 2; }
+.vinfo-label { font: 600 10.5px 'Inter'; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+.vinfo-value { font: 600 14px 'Inter'; color: var(--text); }
+.vinfo-value.big { font: 700 22px 'Inter'; }
+.vinfo-value.on { color: var(--c-green); }
+.vinfo-value.off { color: #94a3b8; }
+.vinfo-value.blocked { color: var(--c-red); }
+
+/* Tabela operacional da tratativa */
+.op-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.op-table th { background: #f8fafc; padding: 7px 10px; font: 600 10.5px 'Inter'; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.op-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text); font: 500 12px 'Inter'; white-space: nowrap; }
+.op-table tbody tr:hover td { background: #f8fafc; }
+.op-table-wrap { overflow: auto; max-height: 200px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+
+.treat-comment-area { margin-top: 4px; }
+.treat-comment-area textarea {
+  width: 100%; min-height: 80px; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font: 400 13px 'Inter'; color: var(--text); resize: vertical;
+  outline: none; background: #fff; transition: border-color .15s;
+}
+.treat-comment-area textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-light); }
+.treat-btns { display: flex; gap: 10px; margin-top: 10px; }
+.treat-btns button {
+  flex: 1; height: 40px; border-radius: 8px; border: none; font: 700 12.5px 'Inter';
+  cursor: pointer; transition: filter .15s;
+}
+.treat-btns button:hover { filter: brightness(0.93); }
+.btn-green { background: var(--c-green); color: #fff; }
+.btn-orange { background: var(--c-orange); color: #fff; }
+
+/* COMMANDS FLOATING MENU */
+.commands-menu {
+  position: absolute; bottom: 58px; left: 70px; z-index: 200;
+  background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); overflow: hidden; min-width: 180px;
+}
+.commands-menu button {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 16px;
+  border: none; background: transparent; font: 600 12.5px 'Inter'; color: var(--text);
+  cursor: pointer; text-align: left; border-bottom: 1px solid var(--border); transition: background .1s;
+}
+.commands-menu button:last-child { border-bottom: none; }
+.commands-menu button:hover { background: #f1f5f9; }
+.commands-menu .cmd-icon { font-size: 15px; width: 20px; text-align: center; }
+.cmd-quick-btn {
+  width: 42px; height: 42px; border-radius: 8px; border: 1px solid var(--border);
+  background: #fff; color: var(--text); display: grid; place-items: center;
+  cursor: pointer; font-size: 18px; transition: all .15s; flex: 0 0 auto;
+}
+.cmd-quick-btn:hover { background: #f1f5f9; border-color: var(--brand); color: var(--brand); }
+</style>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyByHS2GqGR7p2dWkQ4aai_rO0RsrWwGumI&callback=initMap" async defer></script>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">ANTENA</div>
+  <div class="si" title="Perfil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+  <div class="si" title="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+  <div class="si on" title="Mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></div>
+  <div class="si" title="Pontos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+  <div class="si" title="Clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+  <div class="si" title="Relatórios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+  <div class="sg"></div>
+  <div class="si" title="Sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+</aside>
+
+<main class="ws" id="ws">
+  <section class="mz" id="mz">
+    <div id="map"></div>
+    <div class="layer-sw">
+      <button class="lb on" id="btnPadrao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg> PADRÃO</button>
+      <button class="lb" id="btnSat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg> SATÉLITE</button>
+    </div>
+    <div class="toast-stack" id="toasts"></div>
+    <div class="dov" id="dov" onclick="closeDetail()"></div>
+  </section>
+
+  <div class="splitter" id="splitter"></div>
+
+  <section class="az" id="az">
+    <div class="tabs">
+      <div class="tab">DISPOSITIVOS</div>
+      <div class="tab">EVENTOS</div>
+      <div class="tab">COMUNICAÇÃO <span class="badge">99+</span></div>
+      <div class="tab on">ALERTAS <span class="badge alert" id="aCnt">0</span></div>
+    </div>
+    <div class="toolbar">
+      <button class="treat-launch" id="openTreatBtn" title="Tratar alertas deste veículo" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </button>
+      <button class="cmd-quick-btn" id="cmdQuickBtn" title="Comandos rápidos" onclick="toggleCommands()">⚡</button>
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="srch" placeholder="Buscar placa, veículo ou cliente"/></div>
+      <div class="toolbar-right">
+        <div style="display:flex;gap:8px">
+          <button class="sb" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0" id="sB">+ Bateria</button>
+          <button class="sb" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa" id="sR">+ Fronteira</button>
+          <button class="sb" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca" id="sC">+ Corte</button>
+        </div>
+        <div class="chip" id="chip">0 ativos</div>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:260px">Evento</th>
+            <th style="min-width:180px">Veículo</th>
+            <th style="min-width:70px">Placa</th>
+            <th style="min-width:220px">Cliente</th>
+            <th style="min-width:140px">Data GPS</th>
+            <th class="ic" style="min-width:50px" title="Abrir no Maps">Mapa</th>
+            <th class="ic" style="min-width:40px" title="Satélites">Sat</th>
+            <th class="ic" style="min-width:40px" title="Ignição">Ign</th>
+            <th class="ic" style="min-width:80px" title="Velocidade">Vel</th>
+            <th class="ic" style="min-width:40px">S1</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+
+      <aside class="detail" id="detail">
+        <div class="dh">
+          <div class="dh-top">
+            <span class="dh-plate" id="dPlate">—</span>
+            <div class="dh-actions">
+              <button class="follow-btn" onclick="followCurrent()">◎ Seguir</button>
+              <button class="dh-close" onclick="closeDetail()">×</button>
+            </div>
+          </div>
+          <div class="dtabs">
+            <div class="dt on" onclick="dTab('pos',this)">POSIÇÃO</div>
+            <div class="dt" onclick="dTab('vei',this)">VEÍCULO</div>
+            <div class="dt" onclick="dTab('cmd',this)">COMANDOS</div>
+          </div>
+        </div>
+        <div class="db" id="dBody"></div>
+      </aside>
+    </div>
+
+    <div class="footer">
+      <span>Linhas por página: <select id="pgSz"><option>25</option><option>50</option><option selected>100</option></select></span>
+      <span id="ftxt">—</span>
+      <div class="pager">
+        <button id="pPrev" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span id="pLbl" style="font-weight: 600;">1</span>
+        <button id="pNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="ov" id="ov" onclick="closeModal()"></div>
+<div class="modal" id="modal">
+  <div class="mbar"><div class="mbar-i" id="mInfo">—</div><button class="mx" onclick="closeModal()">×</button></div>
+  <div class="mtabs">
+    <div class="mt on" id="mt_ev" onclick="mTopTab('ev')">EVENTOS</div>
+    <div class="mt" id="mt_cmd" onclick="mTopTab('cmd')">COMANDOS</div>
+    <div class="mt" id="mt_rotas" onclick="mTopTab('rotas')">ROTAS</div>
+    <div class="mt" id="mt_hist" onclick="mTopTab('hist')">HISTÓRICO</div>
+  </div>
+  <div class="mbody" id="mbody"></div>
+</div>
+
+<script>
+// Base com tipos de veículos diferentes
+const VH=[
+  {p:'RAR-7A10',c:'MILTON MACHADO DA SILVEIRA',   f:'GT06', id:'868022031335123', lat:-11.852, lng:-55.537, addr:'Av. Tancredo Neves, 1980 - Sinop/MT',           modelo:'Toyota Hilux CD SRV', ano:'2022', cor:'Branca', chassi:'9BRK1234567890', tipo_v: 'carro'},
+  {p:'RWB-3I32',c:'GABRIEL RIBEIRO DE CARVALHO',  f:'GT06', id:'868022031323210', lat:-25.395, lng:-49.241, addr:'Av. Sen. Salgado Filho, 4872 - Curitiba/PR',    modelo:'Honda CG 160 Titan', ano:'2021', cor:'Vermelha',  chassi:'9BRK0987654321', tipo_v: 'moto'},
+  {p:'APA-2H75',c:'OSNI MANOEL RIBEIRO',          f:'GT06', id:'868022031406171', lat:-25.440, lng:-49.244, addr:'Av. Marechal Floriano, 120 - Curitiba/PR',      modelo:'VW Nivus Highline',   ano:'2023', cor:'Cinza',  chassi:'9BRK1122334455', tipo_v: 'carro'},
+  {p:'IVP-5H07',c:'GUILHERME RODRIGUES DA SILVA', f:'GT06', id:'868022031273449', lat:-24.743, lng:-48.136, addr:'R. dos Viajantes, 210 - Registro/SP',           modelo:'Yamaha Fazer 250',       ano:'2020', cor:'Preta',  chassi:'9BRK9988776655', tipo_v: 'moto'},
+  {p:'AJF-6752',c:'CF LOG TRANSPORTES EIRELE',    f:'SUN',  id:'511365236',       lat:-25.472, lng:-49.701, addr:'Av. das Indústrias, 580 - Campo Largo/PR',      modelo:'Scania R450 A6X2',    ano:'2019', cor:'Azul',   chassi:'9BRK3344556677', tipo_v: 'caminhao'},
+  {p:'SDV-4F46',c:'DANIEL VINICIUS GUEDES',       f:'GT06', id:'861768074617440', lat:-25.564, lng:-49.327, addr:'R. João Prosdocimo, 530 - Curitiba/PR',         modelo:'Jeep Compass Long.',  ano:'2023', cor:'Branca', chassi:'9BRK5566778899', tipo_v: 'carro'},
+];
+
+const T_BAT='Remoção de bateria principal',T_BAT2='Remoção de bateria',T_BORD='Saiu da cerca - FRONTEIRA',T_PREV='Entrou na Cerca - PREVENTIVO - LOCAL DE CORTE',T_CUT='Entrou na Cerca - LOCAL DE CORTE';
+const isBat=t=>[T_BAT,T_BAT2].includes(t);
+const PW={black:0,red:1,orange:2,green:3};
+const PC={black:'#000000',red:'#ef4444',orange:'#f97316',green:'#22c55e'};
+const PCLS={black:'p-black',red:'p-red',orange:'p-orange',green:'p-green'};
+const PBDG={black:'bl',red:'re',orange:'or',green:'gr'};
+
+const S={alerts:[],markers:{},hist:{},sel:null,dtab:'pos',detailOpen:false,treatOpen:false,mTopTab:'ev',seq:1,q:'',page:1,pgSz:100,map:null,routeCache:{},routeForms:{},presentationStarted:false};
+const API_BASE='https://j5fdh11lej.execute-api.us-east-1.amazonaws.com';
+const TRACKER_BINDINGS={
+  'RAR-7A10':'tracker-lt32-001',
+  'RWB-3I32':'tracker-lt32pro-001',
+  'APA-2H75':'tracker-lt32-002'
+};
+const COMMAND_MAP={
+  'BLOQUEAR':'RELAY,1#',
+  'DESBLOQUEAR':'RELAY,0#',
+  'SOLICITAR POSIÇÃO':'STATUS#',
+  'RESET':null
+};
+const now=()=>new Date();
+const fDT=d=>new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const fT=d=>new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const pick=l=>l[Math.floor(Math.random()*l.length)];
+const jit=x=>x+(Math.random()-.5)*.012;
+const hb=p=>{if(!S.hist[p])S.hist[p]=[];return S.hist[p]};
+const occ=p=>hb(p).filter(x=>x.kind==='raw').length;
+const alive=()=>S.alerts.filter(a=>a.alive);
+const aliveP=p=>alive().filter(a=>a.placa===p);
+
+function pad2(n){return String(n).padStart(2,'0');}
+function toDatetimeLocalValue(date){
+  const d=new Date(date);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function startOfTodayLocal(){
+  const d=new Date();
+  d.setHours(0,0,0,0);
+  return d;
+}
+function endOfNowLocal(){ return new Date(); }
+function parseLocalInput(value){ return value ? new Date(value) : null; }
+function toUtcIsoFromLocalInput(value){
+  const dt = parseLocalInput(value);
+  return dt ? dt.toISOString() : null;
+}
+function getRouteFormForPlate(placa){
+  if(!S.routeForms[placa]){
+    S.routeForms[placa]={
+      start: toDatetimeLocalValue(startOfTodayLocal()),
+      end: toDatetimeLocalValue(endOfNowLocal()),
+      reportType: 'detailed'
+    };
+  }
+  return S.routeForms[placa];
+}
+function updateRouteFormValue(placa, field, value){
+  const form=getRouteFormForPlate(placa);
+  form[field]=value;
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function mkTel(tipo){
+  const moving=[T_BORD,T_CUT,T_PREV].includes(tipo);
+  return{sat:8+Math.floor(Math.random()*9),gsm:1+Math.floor(Math.random()*4),spd:moving?40+Math.floor(Math.random()*55):0,ign:moving,vlt:isBat(tipo)?(Math.random()>.5?'0.00V':'—'):'13.8V',bat:Math.floor(Math.random()*60)+40,s1:moving};
+}
+
+function classify(tipo,placa){
+  if([T_BORD,T_CUT,T_PREV].includes(tipo)) return{level:'red',reason:tipo===T_BORD?'Saiu da cerca':'Local de corte'};
+  const n=occ(placa);
+  if(n<=1)return{level:'orange',reason:n===0?'1ª ocorrência do dia':'2ª ocorrência'};
+  return{level:'green',reason:'3ª+ vez'};
+}
+
+function mkRaw(v,tipo,dt){return{...v, id:`r${S.seq++}`,kind:'raw',tipo,alive:true,status:'active',placa:v.p,cliente:v.c,fab:v.f,idDisp:v.id,imei:v.id,lat:jit(v.lat),lng:jit(v.lng),gpsAt:dt,sysAt:new Date(dt.getTime()+1700),pri:classify(tipo,v.p),tel:mkTel(tipo), cmdHist:[]};}
+function mkCombo(v,first,tipo2,dt){return{...v, id:`c${S.seq++}`,kind:'combo',tipo:'Combinação crítica',alive:true,status:'active',placa:v.p,cliente:v.c,fab:v.f,idDisp:v.id,imei:v.id,lat:jit(v.lat),lng:jit(v.lng),gpsAt:dt,sysAt:new Date(dt.getTime()+1200),pri:{level:'black',reason:'Combinação crítica'},tel:{sat:7,gsm:1,spd:0,ign:false,vlt:'0.00V',bat:6,s1:false},sources:[{tipo:first.tipo,time:first.gpsAt},{tipo:tipo2,time:dt}], cmdHist:[]};}
+
+function pushAlert(a,silent){S.alerts.push(a);hb(a.placa).unshift({id:a.id,kind:a.kind,tipo:a.tipo,time:a.gpsAt,status:a.status,note:''});addMarker(a);sortAlerts();renderAll();if(!silent)pushToast(a);}
+
+function killAlert(a,status,note){
+  a.alive=false;a.status=status;
+  const x=hb(a.placa).find(e=>e.id===a.id);
+  if(x){x.status=status;if(note)x.note=note;}
+  rmMarker(a.id);
+}
+
+function createAlert(tipo,v,dt){
+  dt=dt||now();
+  const plate=aliveP(v.p),combo=plate.find(a=>a.kind==='combo');
+  if(combo&&(tipo===T_BORD||isBat(tipo))){
+    combo.gpsAt=dt;
+    if(!combo.sources)combo.sources=[];
+    combo.sources.push({tipo,time:dt});
+    sortAlerts();renderAll();pushToast(combo);
+    return combo;
+  }
+
+  const sameRaw = plate.find(a => a.kind==='raw' && a.tipo===tipo);
+  if (sameRaw) {
+    sameRaw.gpsAt = dt;
+    sameRaw.sysAt = new Date(dt.getTime()+1700);
+    sameRaw.lat = jit(v.lat);
+    sameRaw.lng = jit(v.lng);
+    sameRaw.pri = classify(tipo, v.p);
+    sameRaw.tel = mkTel(tipo);
+    sortAlerts();
+    renderAll();
+    pushToast(sameRaw);
+    return sameRaw;
+  }
+
+  const comp=plate.find(a=>a.kind==='raw'&&((tipo===T_BORD&&isBat(a.tipo))||(isBat(tipo)&&a.tipo===T_BORD)));
+  if(comp){killAlert(comp,'merged','Absorvido');const c=mkCombo(v,comp,tipo,dt);pushAlert(c);return c;}
+  const r=mkRaw(v,tipo,dt);pushAlert(r);return r;
+}
+
+function sortAlerts(){S.alerts.sort((a,b)=>{if(a.alive!==b.alive)return b.alive-a.alive;const p=PW[a.pri.level]-PW[b.pri.level];return p!==0?p:new Date(b.gpsAt)-new Date(a.gpsAt);});}
+const filtered=()=>{const q=S.q.trim().toLowerCase();return alive().filter(a=>!q||[a.tipo,a.placa,a.cliente,a.modelo].some(v=>String(v).toLowerCase().includes(q)));};
+
+function hLbl(s){return{active:'Ativo',pending:'Pendente',closed:'Concluído',merged:'Mesclado'}[s]||'Ativo';}
+function hCls(s){return{closed:'hs-d',pending:'hs-p'}[s]||'hs-a';}
+
+function renderTable(){
+  const rows=filtered(),pgSz=S.pgSz,total=rows.length,pages=Math.max(1,Math.ceil(total/pgSz));
+  S.page=Math.min(S.page,pages);
+  const st=(S.page-1)*pgSz,page=rows.slice(st,st+pgSz);
+
+  const tc = {}; 
+  alive().forEach(a => { const k = a.placa+'|'+a.tipo; tc[k] = (tc[k]||0)+1; });
+
+  document.getElementById('tbody').innerHTML=page.map(a=>{
+    const t=a.tel,cls=PCLS[a.pri.level],sel=S.sel===a.id?' sel':'';
+    const cnt = tc[a.placa+'|'+a.tipo];
+    const eventLabel = cnt > 1 ? `${a.tipo} <strong style="opacity: 0.9; margin-left: 4px;">(${cnt})</strong>` : a.tipo;
+    
+    return`<tr class="${cls}${sel}" onclick="selAlert('${a.id}')">
+      <td><div class="ec"><span class="edot" style="background:${PC[a.pri.level]}"></span><span class="etxt" title="${a.tipo}">${eventLabel}</span></div></td>
+      <td style="font-weight:600; font-size:12px;">${a.modelo} <span style="font-weight:400;color:rgba(255,255,255,0.75)">(${a.cor})</span></td>
+      <td style="font:700 13px 'Inter';letter-spacing:.05em">${a.placa}</td>
+      <td style="max-width:220px" title="${a.cliente}">${a.cliente}</td>
+      <td style="font-size:12.5px;color:inherit;font-weight:600;">${fDT(a.gpsAt)}</td>
+      <td class="ic">
+        <a href="https://www.google.com/maps?q=${a.lat},${a.lng}" target="_blank" onclick="event.stopPropagation()" class="gmaps-link" title="Abrir no Google Maps">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </a>
+      </td>
+      <td class="ic"><span class="sat">${t.sat}</span></td>
+      <td class="ic"><span class="dot ${t.ign?'dot-g':'dot-r'}"></span></td>
+      <td class="ic"><span class="spd">${t.spd} km/h</span></td>
+      <td class="ic"><span class="dot ${t.s1?'dot-g':'dot-r'}"></span></td>
+    </tr>`;
+  }).join('');
+
+  const n=alive().length;
+  document.getElementById('aCnt').textContent=n>99?'99+':n;
+  document.getElementById('chip').textContent=`${n} ativos`;
+  document.getElementById('ftxt').textContent=`${total?st+1:0}–${Math.min(st+pgSz,total)} de ${total}`;
+  document.getElementById('pLbl').textContent=S.page;
+  document.getElementById('pPrev').disabled=S.page<=1;
+  document.getElementById('pNext').disabled=S.page>=pages;
+}
+
+// Retorna o HTML do log de comandos formatado
+function renderCmdHistory(a) {
+    if(!a.cmdHist || a.cmdHist.length === 0) {
+        return '<div style="padding: 16px; color: var(--muted); text-align: center; font-size: 12.5px;">Nenhum comando registrado nesta sessão.</div>';
+    }
+    return a.cmdHist.map(h => {
+        const c = h.status.includes('sucesso') ? 'color: var(--c-green)' : (h.status.includes('Enviando') ? 'color: var(--c-orange)' : 'color: var(--muted)');
+        return `<div class="cmd-log-row">
+            <span style="font-weight:600; color: var(--text)">${h.cmd}</span>
+            <span style="${c}; font-weight: 500;">${h.status} - ${fT(h.time)}</span>
+        </div>`;
+    }).join('');
+}
+
+
+function getTrackerIdForAlert(a){
+  return a?.tracker_id || TRACKER_BINDINGS[a?.placa] || null;
+}
+
+function mapFrontCommandToBackend(cmd){
+  return COMMAND_MAP[cmd] ?? null;
+}
+
+async function apiRequest(path, options={}){
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (_) {
+    payload = null;
+  }
+
+  if (!response.ok || (payload && payload.success === false)) {
+    const message = payload?.message || `Falha HTTP ${response.status}`;
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
+function parseStatusResponse(responseText){
+  const raw = String(responseText || '');
+  const parts = raw.split(';').slice(1);
+  const data = {};
+
+  for (const part of parts) {
+    const [key, ...rest] = part.split('=');
+    if (!key || !rest.length) continue;
+    data[key] = rest.join('=');
+  }
+
+  return data;
+}
+
+function applyTrackerSnapshotToAlert(a, snapshot={}){
+  if (!a || !snapshot) return;
+  if (!a.tel) a.tel = {};
+
+  if (snapshot.relay_state !== undefined && snapshot.relay_state !== null) {
+    a.tel.s1 = Number(snapshot.relay_state) === 1;
+  }
+  if (snapshot.ignition !== undefined) {
+    a.tel.ign = Boolean(snapshot.ignition);
+  }
+  if (snapshot.signal_quality !== undefined && snapshot.signal_quality !== null) {
+    a.tel.sat = Number(snapshot.signal_quality);
+  }
+  if (snapshot.battery_voltage !== undefined && snapshot.battery_voltage !== null) {
+    a.tel.bat = Number(snapshot.battery_voltage).toFixed(2);
+  }
+  if (snapshot.updated_at) {
+    a.gpsAt = snapshot.updated_at;
+  }
+}
+
+function applyStatusResponseToAlert(a, responseText=''){
+  const status = parseStatusResponse(responseText);
+  if (!a || !status) return;
+  if (!a.tel) a.tel = {};
+
+  if (status.RELAY) a.tel.s1 = status.RELAY === 'ON';
+  if (status.IGN) a.tel.ign = status.IGN === 'ON';
+  if (status.SIGNAL !== undefined) a.tel.sat = Number(status.SIGNAL);
+  if (status.BATTERY) a.tel.bat = status.BATTERY.replace('V','');
+  if (status.LAT) a.lat = Number(status.LAT);
+  if (status.LNG) a.lng = Number(status.LNG);
+  if (status.ODOMETER_KM !== undefined) a.odometer_km = Number(status.ODOMETER_KM);
+
+  if (S.markers[a.id]) {
+    S.markers[a.id].marker.setPosition({ lat: a.lat, lng: a.lng });
+  }
+}
+
+function hydrateCommandHistoryFromApi(a, items=[]){
+  a.cmdHist = (items || []).map(item => ({
+    time: item.timestamp || now(),
+    cmd: item.command || '—',
+    status: item.result === 'SUCCESS' ? 'Executado com sucesso' : item.result === 'NOOP' ? 'Sem alteração necessária' : (item.result || 'Processado')
+  }));
+}
+
+async function refreshAlertHistory(a){
+  const trackerId = getTrackerIdForAlert(a);
+  if (!trackerId) return;
+  const payload = await apiRequest(`/trackers/${encodeURIComponent(trackerId)}/history?limit=20`);
+  hydrateCommandHistoryFromApi(a, payload.items || []);
+}
+
+async function executeTrackerCommand(a, cmd, renderFn){
+  if (!a) return;
+
+  const trackerId = getTrackerIdForAlert(a);
+  if (!trackerId) {
+    showToastMsg(`Veículo ${a.placa} ainda não está vinculado a um tracker real da API.`, 'orange');
+    return;
+  }
+
+  const backendCommand = mapFrontCommandToBackend(cmd);
+  if (!backendCommand) {
+    showToastMsg(`Comando ${cmd} ainda não está disponível no backend atual.`, 'orange');
+    return;
+  }
+
+  if (!a.cmdHist) a.cmdHist = [];
+  const timeSent = now();
+  a.cmdHist.unshift({ time: timeSent, cmd, status: 'Enviando comando...' });
+  if (typeof renderFn === 'function') renderFn();
+
+  try {
+    const payload = await apiRequest('/command', {
+      method: 'POST',
+      body: JSON.stringify({ tracker_id: trackerId, command: backendCommand })
+    });
+
+    applyTrackerSnapshotToAlert(a, payload.state_snapshot || {});
+    if (backendCommand === 'STATUS#') {
+      applyStatusResponseToAlert(a, payload.response || '');
+      focusAlertOnMap(a);
+    }
+
+    await refreshAlertHistory(a);
+
+    const successMap = {
+      'BLOQUEAR': `Bloqueio confirmado no veículo ${a.placa}.`,
+      'DESBLOQUEAR': `Desbloqueio confirmado no veículo ${a.placa}.`,
+      'SOLICITAR POSIÇÃO': `Posição atualizada para o veículo ${a.placa}.`
+    };
+
+    showToastMsg(successMap[cmd] || `Comando ${cmd} confirmado no veículo ${a.placa}.`, 'green');
+  } catch (error) {
+    const histEntry = a.cmdHist.find(h => h.time === timeSent);
+    if (histEntry) histEntry.status = `Falha: ${error.message}`;
+    showToastMsg(`Falha ao executar ${cmd} em ${a.placa}: ${error.message}`, 'red');
+  }
+
+  if (typeof renderFn === 'function') renderFn();
+}
+
+function renderDetail(){
+  const d=document.getElementById('detail'),ov=document.getElementById('dov'),a=S.alerts.find(x=>x.id===S.sel&&x.alive);
+  if(!S.detailOpen||!a){d.classList.remove('open');ov.classList.remove('open');return;}
+  d.classList.add('open');ov.classList.add('open');
+  document.getElementById('dPlate').innerHTML=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14l-1-5a3 3 0 0 0-3-2H9a3 3 0 0 0-3 2l-1 5Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M7 10l2-3h6l2 3"/></svg> ${a.placa}`;
+  
+  const t=a.tel,tab=S.dtab,bc=PBDG[a.pri.level];
+  const badge=`<div class="ev-badge ${bc}"><span class="ebd" style="background:${PC[a.pri.level]}"></span><strong>${a.tipo}</strong><span style="margin-left:auto;font-size:12px;opacity:.8">${a.pri.reason}</span></div>`;
+  let html='';
+  
+  if(tab==='pos'){
+    html=badge+`<div class="dgrid">
+      <div class="dc"><div class="dl">Ignição</div><div class="dv ${t.ign?'g':'r'}">${t.ign?'LIGADA':'DESLIGADA'}</div></div>
+      <div class="dc"><div class="dl">Bloqueio</div><div class="dv ${t.s1?'r':'g'}">${t.s1?'BLOQUEADO':'DESBLOQUEADO'}</div></div>
+      <div class="dc w2"><div class="dl">Endereço</div><div class="dv" style="white-space:normal;font-size:13px;line-height:1.5">${a.addr}</div></div>
+      <div class="dc"><div class="dl">Velocidade</div><div class="dv big">${t.spd} km/h</div></div>
+      <div class="dc"><div class="dl">Bateria rastreador</div><div class="dv big">${t.bat}%</div></div>
+    </div>`;
+  } else if(tab==='vei'){
+    html=badge+`<div class="dgrid">
+      <div class="dc w2"><div class="dl">Modelo</div><div class="dv big">${a.modelo}</div></div>
+      <div class="dc"><div class="dl">Ano</div><div class="dv big">${a.ano}</div></div>
+      <div class="dc"><div class="dl">Cor</div><div class="dv big">${a.cor}</div></div>
+      <div class="dc w2"><div class="dl">Cliente Proprietário</div><div class="dv">${a.cliente}</div></div>
+    </div>`;
+  } else if(tab==='cmd'){
+    html=badge+`<div class="cmd-actions" style="grid-template-columns: 1fr;">
+      <button onclick="execCmd('BLOQUEAR')">BLOQUEAR VEÍCULO</button>
+      <button onclick="execCmd('DESBLOQUEAR')">DESBLOQUEAR VEÍCULO</button>
+      <button onclick="execCmd('SOLICITAR POSIÇÃO')">ATUALIZAR POSIÇÃO</button>
+    </div>
+    <div style="margin-top: 20px;">
+        <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 8px;">Histórico de Comandos</div>
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; max-height: 150px; overflow-y: auto;">
+            ${renderCmdHistory(a)}
+        </div>
+    </div>`;
+  }
+  document.getElementById('dBody').innerHTML=html;
+}
+
+function dTab(tab,el){S.dtab=tab;document.querySelectorAll('.dt').forEach(t=>t.classList.remove('on'));if(el)el.classList.add('on');renderDetail();}
+function closeDetail(){S.detailOpen=false;renderAll();}
+
+function mTopTab(tab) {
+  S.mTopTab = tab;
+  document.querySelectorAll('.mt').forEach(el => el.classList.remove('on'));
+  const el = document.getElementById('mt_' + tab);
+  if (el) el.classList.add('on');
+  renderModal();
+}
+
+function renderModal(){
+  const a=S.alerts.find(x=>x.id===S.sel&&x.alive),m=document.getElementById('modal'),ov=document.getElementById('ov');
+  if(!S.treatOpen||!a){m.classList.remove('open');ov.classList.remove('open');return;}
+  m.classList.add('open');ov.classList.add('open');
+  document.getElementById('mInfo').textContent=`Placa: ${a.placa}  |  Veículo: ${a.modelo} (${a.cor})  |  Chassi: ${a.chassi}`;
+  
+  const b = document.getElementById('mbody');
+
+  // ── ABA: EVENTOS ──────────────────────────────────────────────────────────
+  if (S.mTopTab === 'ev') {
+    const activeForPlate = aliveP(a.placa);
+
+    b.innerHTML=`<div class="m2col">
+      <div class="mcard">
+        <div class="mchead">
+          <span>Eventos do veículo · ${a.placa}</span>
+          <span style="font:500 12px 'Inter';color:var(--muted)">${activeForPlate.length} evento(s) ativo(s)</span>
+        </div>
+
+        <div class="op-table-wrap">
+          <table class="op-table">
+            <thead>
+              <tr>
+                <th style="width:36px;text-align:center">
+                  ${activeForPlate.length > 1 ? '<input type="checkbox" id="chkAll" onchange="togAll(this)">' : ''}
+                </th>
+                <th>Evento</th>
+                <th>Data GPS</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Ignição</th>
+                <th>Velocidade</th>
+                <th>Bateria</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${activeForPlate.map(row => {
+                // Só pré-marca o alerta que foi selecionado (S.sel)
+                const isSelected = row.id === S.sel;
+                return `<tr>
+                  <td style="text-align:center">
+                    <input type="checkbox" class="rck" data-id="${row.id}" ${isSelected ? 'checked' : ''}>
+                  </td>
+                  <td style="font-weight:600;color:var(--text)">${row.tipo}</td>
+                  <td>${fDT(row.gpsAt)}</td>
+                  <td style="font-family:monospace;font-size:11.5px">${row.lat.toFixed(6)}</td>
+                  <td style="font-family:monospace;font-size:11.5px">${row.lng.toFixed(6)}</td>
+                  <td>${row.tel.ign ? '<span style="color:var(--c-green);font-weight:600">Lig.</span>' : '<span style="color:var(--muted)">Desl.</span>'}</td>
+                  <td>${row.tel.spd} km/h</td>
+                  <td>${row.tel.bat}%</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="padding:16px 20px;border-top:1px solid var(--border);background:#f8fafc">
+          <label style="font:600 10.5px 'Inter';color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">Comentário da Tratativa</label>
+          <textarea id="cBox" class="cbox" placeholder="Descreva a ação tomada..."></textarea>
+          <div class="treat-btns">
+            <button class="btn-green" onclick="resolveBatch('closed')">✓ CONCLUIR</button>
+            <button class="btn-orange" onclick="resolveBatch('pending')">⧗ PENDENTE</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="scard">
+        <div class="schead">Resumo do Veículo</div>
+        ${[['Cliente',a.cliente],['Veículo',`${a.modelo} (${a.cor})`],['Ano',a.ano],['Placa',a.placa],
+           ['Tipo', a.tipo_v==='moto'?'🏍️ Moto':a.tipo_v==='caminhao'?'🚛 Caminhão':'🚗 Carro'],
+           ['Endereço',a.addr]].map(([k,v])=>`<div class="srow"><span class="sk">${k}</span><span style="font-weight:500;white-space:normal;line-height:1.5">${v}</span></div>`).join('')}
+      </div>
+    </div>`;
+
+  // ── ABA: COMANDOS ─────────────────────────────────────────────────────────
+  } else if (S.mTopTab === 'cmd') {
+    const hist = a.cmdHist || [];
+    b.innerHTML = `<div class="m2col">
+      <div class="mcard">
+        <div class="mchead"><span>Enviar Comando</span></div>
+        <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <button onclick="execModalCmd('BLOQUEAR',this)" style="height:48px;border:1px solid #fecaca;border-radius:8px;background:#fef2f2;font:700 13px 'Inter';cursor:pointer;color:var(--c-red);transition:all .2s">🔒 BLOQUEAR</button>
+          <button onclick="execModalCmd('DESBLOQUEAR',this)" style="height:48px;border:1px solid #bbf7d0;border-radius:8px;background:#f0fdf4;font:700 13px 'Inter';cursor:pointer;color:#15803d;transition:all .2s">🔓 DESBLOQUEAR</button>
+          <button onclick="execModalCmd('RESET',this)" style="height:48px;border:1px solid #e0e7ff;border-radius:8px;background:#eef2ff;font:700 13px 'Inter';cursor:pointer;color:#4338ca;transition:all .2s">🔄 RESET</button>
+          <button onclick="execModalCmd('SOLICITAR POSIÇÃO',this)" style="height:48px;border:1px solid #bae6fd;border-radius:8px;background:#f0f9ff;font:700 13px 'Inter';cursor:pointer;color:#0369a1;transition:all .2s">📡 POSIÇÃO</button>
+        </div>
+      </div>
+      <div class="mcard">
+        <div class="mchead">
+          <span>Histórico de Comandos · ${a.placa}</span>
+          <span style="font:500 12px 'Inter';color:var(--muted)">${hist.length} enviado(s)</span>
+        </div>
+        <div class="op-table-wrap" style="max-height:none">
+          <table class="op-table">
+            <thead>
+              <tr><th>Comando</th><th>Horário</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              ${hist.length ? hist.map(h => `<tr>
+                <td style="font-weight:700">${h.cmd}</td>
+                <td>${fDT(h.time)}</td>
+                <td style="${h.status.includes('sucesso')?'color:var(--c-green)':'color:var(--c-orange)'};font-weight:600">${h.status}</td>
+              </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--muted)">Nenhum comando enviado nesta sessão.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+  // ── ABA: ROTAS ────────────────────────────────────────────────────────────
+  } else if (S.mTopTab === 'rotas') {
+    const form = getRouteFormForPlate(a.placa);
+    const cached = S.routeCache[a.placa];
+    b.innerHTML = `<div style="display:flex;flex-direction:column;gap:20px">
+      <div class="mcard">
+        <div class="mchead"><span>Relatórios de rota · ${a.placa}</span></div>
+        <div style="padding:20px;display:grid;grid-template-columns:minmax(240px,1fr) minmax(240px,1fr) minmax(240px,1fr) auto;gap:16px;align-items:end">
+          <div>
+            <label style="font:600 10.5px 'Inter';color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">Data/Hora do início</label>
+            <input type="datetime-local" id="rotaDe" value="${form.start}" onchange="updateRouteFormValue('${a.placa}','start',this.value)" style="width:100%;height:38px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:500 13px 'Inter';color:var(--text);outline:none">
+          </div>
+          <div>
+            <label style="font:600 10.5px 'Inter';color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">Data/Hora do fim</label>
+            <input type="datetime-local" id="rotaAte" value="${form.end}" onchange="updateRouteFormValue('${a.placa}','end',this.value)" style="width:100%;height:38px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:500 13px 'Inter';color:var(--text);outline:none">
+          </div>
+          <div>
+            <label style="font:600 10.5px 'Inter';color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">Tipo de Relatório</label>
+            <select id="rotaTipo" onchange="updateRouteFormValue('${a.placa}','reportType',this.value)" style="width:100%;height:38px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:500 13px 'Inter';color:var(--text);outline:none;background:#fff">
+              <option value="detailed" ${form.reportType==='detailed'?'selected':''}>Posicionamento detalhado</option>
+              <option value="address" ${form.reportType==='address'?'selected':''}>Posicionamento com endereço</option>
+              <option value="map" ${form.reportType==='map'?'selected':''}>Posicionamento no mapa</option>
+              <option value="events" ${form.reportType==='events'?'selected':''}>Eventos</option>
+              <option value="movement" ${form.reportType==='movement'?'selected':''}>Movimento/Parada</option>
+            </select>
+          </div>
+          <button onclick="consultarRota('${a.placa}')" style="height:38px;padding:0 20px;background:var(--brand);color:#fff;border:none;border-radius:6px;font:700 12.5px 'Inter';cursor:pointer">Gerar Relatório</button>
+        </div>
+        <div style="padding:0 20px 20px;display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" style="height:34px;padding:0 16px;border:1px solid #c4b5fd;border-radius:8px;background:#fff;font:700 12px 'Inter';color:#7c3aed;cursor:pointer">PDF</button>
+          <button type="button" style="height:34px;padding:0 16px;border:1px solid #c4b5fd;border-radius:8px;background:#fff;font:700 12px 'Inter';color:#7c3aed;cursor:pointer">EXCEL</button>
+          <button type="button" onclick="openRouteMapForPlate('${a.placa}')" style="height:34px;padding:0 16px;border:1px solid #c4b5fd;border-radius:8px;background:#fff;font:700 12px 'Inter';color:#7c3aed;cursor:pointer">EXIBIR MAPA</button>
+          <button type="button" style="height:34px;padding:0 16px;border:1px solid #c4b5fd;border-radius:8px;background:#fff;font:700 12px 'Inter';color:#7c3aed;cursor:pointer">CAMPOS</button>
+        </div>
+      </div>
+
+      <div class="mcard" id="rotaResult">
+        ${renderRouteResultCard(a.placa, cached)}
+      </div>
+    </div>`;
+
+  // ── ABA: HISTÓRICO ────────────────────────────────────────────────────────
+  } else if (S.mTopTab === 'hist') {
+    const prior = hb(a.placa).filter(x => x.status === 'closed' || x.status === 'pending');
+    b.innerHTML = `<div class="mcard">
+      <div class="mchead">
+        <span>Histórico de Tratativas · ${a.placa}</span>
+        <span style="font:500 12px 'Inter';color:var(--muted)">${prior.length} registro(s)</span>
+      </div>
+      <div class="op-table-wrap" style="max-height:none">
+        <table class="op-table">
+          <thead>
+            <tr><th>Evento</th><th>Data</th><th>Status</th><th>Comentário</th></tr>
+          </thead>
+          <tbody>
+            ${prior.length ? prior.slice(0,50).map(x=>`<tr>
+              <td style="font-weight:600">${x.tipo}</td>
+              <td>${fDT(x.time)}</td>
+              <td class="${hCls(x.status)}">${hLbl(x.status)}</td>
+              <td style="white-space:normal;max-width:300px;color:var(--muted)">${x.note||'—'}</td>
+            </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--muted)">Nenhum histórico registrado.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+}
+
+function togAll(el) {
+  document.querySelectorAll('#mbody .rck').forEach(cb => cb.checked = el.checked);
+}
+
+function resolveBatch(statusVal) {
+  // Lê apenas os checkboxes DENTRO do modal, nunca globalmente
+  const checkboxes = document.querySelectorAll('#mbody .rck:checked');
+  const ids = Array.from(checkboxes).map(cb => cb.dataset.id).filter(Boolean);
+  const status = statusVal || 'closed';
+
+  if (ids.length === 0) {
+    showToastMsg('Marque pelo menos um evento na lista para tratar.', 'orange');
+    return;
+  }
+
+  const box = document.getElementById('cBox');
+  const txt = box ? box.value.trim() : '';
+  if (!txt) { box.classList.add('err'); box.focus(); return; }
+
+  ids.forEach(id => {
+    const al = S.alerts.find(x => x.id === id && x.alive);
+    if (al) { al.lastComment = txt; killAlert(al, status, txt); }
+  });
+
+  S.treatOpen = false;
+  S.sel = null;
+  renderAll();
+  const label = status === 'pending' ? 'marcado(s) como Pendente' : 'concluído(s)';
+  showToastMsg(`${ids.length} evento(s) ${label}.`, status === 'pending' ? 'orange' : 'green');
+}
+
+// Executa comando dentro da aba Comandos da engrenagem
+async function execModalCmd(cmd) {
+  const a = S.alerts.find(x => x.id === S.sel && x.alive);
+  if (!a) return;
+  await executeTrackerCommand(a, cmd, () => {
+    renderModal();
+    renderDetail();
+    renderTable();
+  });
+}
+
+
+function mapTelemetryItemToRouteRow(item){
+  const lat = Number(item?.latitude);
+  const lng = Number(item?.longitude);
+  if(!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const signal = Number(item?.signal_quality);
+  const battery = Number(item?.battery_voltage);
+  const odometer = Number(item?.odometer_km);
+  const speed = Number(item?.speed_kmh ?? 0);
+
+  return {
+    timestamp: item.recorded_at || item.updated_at || new Date().toISOString(),
+    lat,
+    lng,
+    ignition: !!item.ignition,
+    odometerKm: Number.isFinite(odometer) ? odometer : null,
+    speedKmh: Number.isFinite(speed) ? speed : 0,
+    satellite: Number.isFinite(signal) ? signal : '—',
+    gprs: item.gsm_registered === true ? 4 : item.gsm_registered === false ? 0 : '—',
+    batteryV: Number.isFinite(battery) ? battery : null,
+    out1: item.relay_state === 1 ? 'ON' : item.relay_state === 0 ? 'OFF' : '—',
+    out2: item.external_power === true ? 'EXT' : item.external_power === false ? 'BAT' : '—'
+  };
+}
+
+function extractRouteRowsFromPositions(items){
+  const rows = [];
+  for(const item of (items || [])){
+    const row = mapTelemetryItemToRouteRow(item);
+    if(row) rows.push(row);
+  }
+  rows.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  return rows;
+}
+
+function buildRouteSummary(rows){
+  if(!rows.length){
+    return {
+      startKm: '0.0 km',
+      endKm: '0.0 km',
+      distance: '0.0 km',
+      ignOn: '00:00:00',
+      ignOff: '00:00:00',
+      minSpeed: '0 km/h',
+      maxSpeed: '0 km/h',
+      avgSpeed: '0 km/h'
+    };
+  }
+
+  const odoValues = rows.map(r => r.odometerKm).filter(v => Number.isFinite(v));
+  const speeds = rows.map(r => Number(r.speedKmh || 0)).filter(v => Number.isFinite(v));
+  const ignOnCount = rows.filter(r => r.ignition).length;
+  const ignOffCount = rows.length - ignOnCount;
+
+  const startKm = odoValues.length ? odoValues[odoValues.length-1] : 0;
+  const endKm = odoValues.length ? odoValues[0] : 0;
+  const distance = Math.max(0, endKm - startKm);
+  const avgSpeed = speeds.length ? speeds.reduce((a,b)=>a+b,0) / speeds.length : 0;
+  const minSpeed = speeds.length ? Math.min(...speeds) : 0;
+  const maxSpeed = speeds.length ? Math.max(...speeds) : 0;
+  const totalMinutes = rows.length;
+
+  function minutesToClock(minutes){
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${pad2(h)}:${pad2(m)}:00`;
+  }
+
+  return {
+    startKm: `${startKm.toFixed(1)} km`,
+    endKm: `${endKm.toFixed(1)} km`,
+    distance: `${distance.toFixed(1)} km`,
+    ignOn: minutesToClock(ignOnCount),
+    ignOff: minutesToClock(ignOffCount),
+    minSpeed: `${minSpeed.toFixed(0)} km/h`,
+    maxSpeed: `${maxSpeed.toFixed(0)} km/h`,
+    avgSpeed: `${avgSpeed.toFixed(1)} km/h`
+  };
+}
+
+function renderRouteResultCard(placa, cached){
+  if(!cached){
+    return `
+      <div class="mchead"><span>Pontos de rota</span></div>
+      <div style="padding:32px;text-align:center;color:var(--muted);font:500 13px 'Inter'">
+        Preencha o período e clique em Gerar Relatório.
+      </div>`;
+  }
+
+  if(cached.loading){
+    return `
+      <div class="mchead"><span>Pontos de rota</span></div>
+      <div style="padding:32px;text-align:center;color:var(--muted);font:600 13px 'Inter'">
+        Gerando relatório...
+      </div>`;
+  }
+
+  if(cached.error){
+    return `
+      <div class="mchead"><span>Pontos de rota</span></div>
+      <div style="padding:32px;text-align:center;color:var(--c-red);font:600 13px 'Inter'">
+        ${escapeHtml(cached.error)}
+      </div>`;
+  }
+
+  const rows = cached.rows || [];
+  const summary = cached.summary || buildRouteSummary(rows);
+
+  return `
+    <div class="mchead">
+      <span>${placa} · ${rows.length} ponto(s)</span>
+      <span style="font:500 12px 'Inter';color:var(--muted)">${escapeHtml(cached.trackerId || 'simulação local')}</span>
+    </div>
+    <div style="padding:10px 20px 0;color:var(--muted);font:500 12px 'Inter'">
+      Período: ${cached.start ? escapeHtml(fDT(cached.start)) : '—'} até ${cached.end ? escapeHtml(fDT(cached.end)) : '—'}
+    </div>
+    <div class="op-table-wrap" style="max-height:420px">
+      <table class="op-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Lat/Lng</th>
+            <th>Ignição</th>
+            <th>Odômetro</th>
+            <th>Velocidade</th>
+            <th>Satélite</th>
+            <th>GPRS</th>
+            <th>Bat</th>
+            <th>Volt(V)</th>
+            <th>Out1</th>
+            <th>Out2</th>
+            <th>Maps</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.length ? rows.map(r => `
+            <tr>
+              <td>${fDT(r.timestamp)}</td>
+              <td style="font-family:monospace;font-size:11.5px">${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}</td>
+              <td>${r.ignition ? 'Ligada' : 'Desligada'}</td>
+              <td>${r.odometerKm !== null ? `${r.odometerKm.toFixed(1)} km` : '—'}</td>
+              <td>${Number(r.speedKmh || 0).toFixed(0)} km/h</td>
+              <td>${r.satellite}</td>
+              <td>${r.gprs}</td>
+              <td>${r.batteryV !== null ? r.batteryV.toFixed(1) : '—'}</td>
+              <td>${r.batteryV !== null ? r.batteryV.toFixed(1) : '—'}</td>
+              <td>${r.out1}</td>
+              <td>${r.out2}</td>
+              <td><a href="https://www.google.com/maps?q=${r.lat},${r.lng}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:700;font-size:12px;text-decoration:none">Ver ↗</a></td>
+            </tr>`).join('') : `
+            <tr><td colspan="12" style="text-align:center;padding:24px;color:var(--muted)">Nenhum ponto encontrado no período selecionado.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(8,minmax(120px,1fr));gap:0;border-top:1px solid var(--border);background:#fff">
+      ${[
+        ['Odôm. Inicial', summary.startKm],
+        ['Odôm. Final', summary.endKm],
+        ['KM Percorridos', summary.distance],
+        ['Ignição Ligada', summary.ignOn],
+        ['Ignição Desligada', summary.ignOff],
+        ['Vel. Mín', summary.minSpeed],
+        ['Vel. Máx', summary.maxSpeed],
+        ['Vel. Média', summary.avgSpeed],
+      ].map(([label, value]) => `
+        <div style="padding:14px 16px;border-right:1px solid var(--border)">
+          <div style="font:600 11px 'Inter';color:var(--muted);margin-bottom:6px">${label}</div>
+          <div style="font:700 14px 'Inter';color:var(--text)">${value}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function consultarRota(placa) {
+  const form = getRouteFormForPlate(placa);
+  const de = document.getElementById('rotaDe')?.value || form.start;
+  const ate = document.getElementById('rotaAte')?.value || form.end;
+  const tipo = document.getElementById('rotaTipo')?.value || form.reportType || 'detailed';
+
+  updateRouteFormValue(placa, 'start', de);
+  updateRouteFormValue(placa, 'end', ate);
+  updateRouteFormValue(placa, 'reportType', tipo);
+
+  const startDate = parseLocalInput(de);
+  const endDate = parseLocalInput(ate);
+  const startIso = toUtcIsoFromLocalInput(de);
+  const endIso = toUtcIsoFromLocalInput(ate);
+
+  if (!startDate || !endDate || !startIso || !endIso) { showToastMsg('Preencha data/hora inicial e final.', 'orange'); return; }
+  if (startDate > endDate) { showToastMsg('Data/hora inicial não pode ser maior que a final.', 'orange'); return; }
+
+  const trackerId = TRACKER_BINDINGS[placa];
+  if (!trackerId) {
+    S.routeCache[placa] = { error: 'Este veículo ainda não está vinculado a um tracker real.', rows: [], trackerId: null };
+    renderModal();
+    showToastMsg(`Veículo ${placa} ainda não possui tracker real para relatório.`, 'orange');
+    return;
+  }
+
+  S.routeCache[placa] = { loading: true, rows: [], trackerId, start: startIso, end: endIso };
+  renderModal();
+
+  try {
+    const payload = await apiRequest(`/trackers/${encodeURIComponent(trackerId)}/positions?start=${encodeURIComponent(startIso)}&end=${encodeURIComponent(endIso)}&limit=5000`);
+    const rows = extractRouteRowsFromPositions(payload.items || []);
+    S.routeCache[placa] = {
+      trackerId,
+      generatedAt: new Date().toISOString(),
+      start: payload.start || startIso,
+      end: payload.end || endIso,
+      rows,
+      summary: buildRouteSummary(rows)
+    };
+    renderModal();
+    showToastMsg(`Relatório de rota gerado para ${placa}.`, 'green');
+  } catch (error) {
+    S.routeCache[placa] = { error: `Falha ao consultar rota: ${error.message}`, rows: [], trackerId, start: startIso, end: endIso };
+    renderModal();
+    showToastMsg(`Falha ao consultar rota de ${placa}: ${error.message}`, 'red');
+  }
+}
+
+function openRouteMapForPlate(placa){
+  const cached = S.routeCache[placa];
+  if (!cached || !cached.rows || !cached.rows.length) {
+    showToastMsg('Gere o relatório antes de abrir o mapa.', 'orange');
+    return;
+  }
+  const first = cached.rows[0];
+  window.open(`https://www.google.com/maps?q=${first.lat},${first.lng}`, '_blank', 'noopener');
+}
+
+function openTreat(id){S.sel=id;S.treatOpen=true;S.detailOpen=false; S.mTopTab='ev'; renderAll();renderModal();}
+function closeModal(){S.treatOpen=false;renderModal();}
+
+function renderAll(){
+    renderTable();
+    renderDetail();
+    renderModal();
+    renderToastStack(); 
+    const b=document.getElementById('openTreatBtn'); 
+    if(b)b.disabled=!S.sel||!S.alerts.some(x=>x.id===S.sel&&x.alive);
+}
+
+// ==== API GOOGLE MAPS ====
+window.initMap = function() {
+  S.map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: -25.44, lng: -49.28},
+    zoom: 12,
+    mapTypeId: 'roadmap',
+    disableDefaultUI: true, 
+    zoomControl: true,
+  });
+
+  S.alerts.forEach(a => { if(a.alive && !S.markers[a.id]) addMarker(a); });
+  if (!S.presentationStarted) {
+    S.presentationStarted = true;
+    presentationSequence();
+  }
+};
+
+/* * ----------------------------------------------------------------------
+ * ICONS VETORIAIS REALISTAS DE VEÍCULOS
+ * Nota: Se quiser trocar por uma imagem PNG real 3D, basta mudar 
+ * a propriedade "url" abaixo para o link da sua imagem.
+ * Ex: url: "https://seusite.com/carro-topo.png"
+ * ----------------------------------------------------------------------
+ */
+function carIcon(a){
+  const c = PC[a.pri.level].replace('#', '%23');
+  let svg = '';
+  let w, h;
+
+  if (a.tipo_v === 'moto') {
+    w = 34; h = 34;
+    // Moto vista de cima — realista
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 34 34">
+      <defs>
+        <filter id="sh${a.id}" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/>
+        </filter>
+      </defs>
+      <g filter="url(%23sh${a.id})">
+        <!-- Roda traseira -->
+        <ellipse cx="17" cy="28" rx="4" ry="3.5" fill="%23111" stroke="%23333" stroke-width="0.5"/>
+        <ellipse cx="17" cy="28" rx="2.5" ry="2" fill="%23444"/>
+        <!-- Corpo da moto -->
+        <path d="M13,12 Q17,10 21,12 L22,23 Q17,25 12,23 Z" fill="${c}"/>
+        <!-- Tanque / bloco motor -->
+        <rect x="14" y="14" width="6" height="7" rx="2" fill="%231a1a2e"/>
+        <!-- Guidão -->
+        <path d="M11,12 L15,13 M19,13 L23,12" stroke="%23555" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- Roda dianteira -->
+        <ellipse cx="17" cy="8" rx="3.5" ry="4" fill="%23111" stroke="%23333" stroke-width="0.5"/>
+        <ellipse cx="17" cy="8" rx="2" ry="2.5" fill="%23444"/>
+        <!-- Farol -->
+        <ellipse cx="17" cy="5.5" rx="2" ry="1.5" fill="%23fffae6" opacity="0.95"/>
+        <!-- Espelhos -->
+        <rect x="10" y="12" width="3" height="1.5" rx="0.5" fill="%23666" transform="rotate(-15,11.5,12.75)"/>
+        <rect x="21" y="12" width="3" height="1.5" rx="0.5" fill="%23666" transform="rotate(15,22.5,12.75)"/>
+      </g>
+    </svg>`;
+
+  } else if (a.tipo_v === 'caminhao') {
+    w = 28; h = 58;
+    // Caminhão vista de cima — cabine + carroceria
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 28 58">
+      <defs>
+        <filter id="sh${a.id}" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity="0.4"/>
+        </filter>
+      </defs>
+      <g filter="url(%23sh${a.id})">
+        <!-- Carroceria / reboque -->
+        <rect x="4" y="16" width="20" height="36" rx="2" fill="%23e2e8f0" stroke="%23cbd5e1" stroke-width="1"/>
+        <!-- Divisórias da carroceria -->
+        <line x1="4" y1="27" x2="24" y2="27" stroke="%23cbd5e1" stroke-width="0.8"/>
+        <line x1="4" y1="38" x2="24" y2="38" stroke="%23cbd5e1" stroke-width="0.8"/>
+        <!-- Rodas traseiras duplas -->
+        <rect x="1" y="38" width="4" height="5" rx="1" fill="%23111"/>
+        <rect x="1" y="44" width="4" height="5" rx="1" fill="%23111"/>
+        <rect x="23" y="38" width="4" height="5" rx="1" fill="%23111"/>
+        <rect x="23" y="44" width="4" height="5" rx="1" fill="%23111"/>
+        <!-- Eixo traseiro -->
+        <rect x="1" y="22" width="4" height="5" rx="1" fill="%23111"/>
+        <rect x="23" y="22" width="4" height="5" rx="1" fill="%23111"/>
+        <!-- Cabine -->
+        <path d="M5,5 Q14,2 23,5 L24,16 Q14,18 4,16 Z" fill="${c}" stroke="${c}" stroke-width="0.5"/>
+        <!-- Para-brisa -->
+        <path d="M7,6.5 Q14,4.5 21,6.5 L21.5,12 Q14,14 6.5,12 Z" fill="%231a1a2e" opacity="0.85"/>
+        <!-- Reflexo para-brisa -->
+        <path d="M9,7.5 Q13,6 17,7.5 L17,9 Q13,8 9,9 Z" fill="%23fff" opacity="0.15"/>
+        <!-- Rodas dianteiras -->
+        <rect x="1" y="8" width="4" height="5" rx="1" fill="%23111"/>
+        <rect x="23" y="8" width="4" height="5" rx="1" fill="%23111"/>
+        <!-- Faróis -->
+        <rect x="5" y="3" width="5" height="2.5" rx="1" fill="%23fffae6" opacity="0.95"/>
+        <rect x="18" y="3" width="5" height="2.5" rx="1" fill="%23fffae6" opacity="0.95"/>
+        <!-- Grade dianteira -->
+        <rect x="9" y="3.5" width="10" height="2" rx="0.5" fill="%23888"/>
+      </g>
+    </svg>`;
+
+  } else {
+    // Carro vista de cima — detalhado
+    w = 30; h = 50;
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 30 50">
+      <defs>
+        <filter id="sh${a.id}" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/>
+        </filter>
+        <linearGradient id="body${a.id}" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.85"/>
+          <stop offset="50%" stop-color="${c}"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.85"/>
+        </linearGradient>
+      </defs>
+      <g filter="url(%23sh${a.id})">
+        <!-- Corpo principal -->
+        <path d="M5,10 Q15,6 25,10 L26,38 Q15,42 4,38 Z" fill="url(%23body${a.id})"/>
+        <!-- Teto/cabine (área escura no meio) -->
+        <path d="M8,17 Q15,14 22,17 L22,32 Q15,35 8,32 Z" fill="%231a1a2e" opacity="0.9"/>
+        <!-- Reflexo teto -->
+        <path d="M10,18 Q15,16 18,18 L18,20 Q15,18.5 10,20 Z" fill="%23fff" opacity="0.12"/>
+        <!-- Para-brisa dianteiro -->
+        <path d="M7,11 Q15,8.5 23,11 L22,17 Q15,15 8,17 Z" fill="%231a1a2e" opacity="0.75"/>
+        <!-- Reflexo para-brisa -->
+        <path d="M9,12 Q15,10 20,12 L20,14 Q15,12.5 9,14 Z" fill="%23fff" opacity="0.18"/>
+        <!-- Vidro traseiro -->
+        <path d="M8,32 Q15,35 22,32 L23,38 Q15,41 7,38 Z" fill="%231a1a2e" opacity="0.6"/>
+        <!-- Rodas -->
+        <rect x="1" y="11" width="5" height="7" rx="2" fill="%23111"/>
+        <rect x="24" y="11" width="5" height="7" rx="2" fill="%23111"/>
+        <rect x="1" y="32" width="5" height="7" rx="2" fill="%23111"/>
+        <rect x="24" y="32" width="5" height="7" rx="2" fill="%23111"/>
+        <!-- Aro das rodas -->
+        <rect x="2" y="12.5" width="3" height="4" rx="1.2" fill="%23444"/>
+        <rect x="25" y="12.5" width="3" height="4" rx="1.2" fill="%23444"/>
+        <rect x="2" y="33.5" width="3" height="4" rx="1.2" fill="%23444"/>
+        <rect x="25" y="33.5" width="3" height="4" rx="1.2" fill="%23444"/>
+        <!-- Faróis dianteiros -->
+        <path d="M6,8.5 L10,9.5 L10,11 L6,10.5 Z" fill="%23fffae6" opacity="0.95"/>
+        <path d="M24,8.5 L20,9.5 L20,11 L24,10.5 Z" fill="%23fffae6" opacity="0.95"/>
+        <!-- Lanternas traseiras -->
+        <path d="M6,40 L10,39 L10,41 L6,41.5 Z" fill="%23ef4444" opacity="0.9"/>
+        <path d="M24,40 L20,39 L20,41 L24,41.5 Z" fill="%23ef4444" opacity="0.9"/>
+        <!-- Grade / bumper dianteiro -->
+        <path d="M9,7.5 Q15,6 21,7.5 L21,9 Q15,8 9,9 Z" fill="%23888" opacity="0.8"/>
+        <!-- Detalhe lateral esquerdo -->
+        <path d="M4,22 L4,28" stroke="${c}" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+        <!-- Detalhe lateral direito -->
+        <path d="M26,22 L26,28" stroke="${c}" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      </g>
+    </svg>`;
+  }
+
+  return { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg.replace(/\n\s*/g,'')), scaledSize: new google.maps.Size(w, h), anchor: new google.maps.Point(w/2, h/2) };
+}
+
+function addMarker(a){
+  if(!S.map) return;
+  const tc = {}; alive().forEach(x => { const k = x.placa+'|'+x.tipo; tc[k] = (tc[k]||0)+1; });
+  const cnt = tc[a.placa+'|'+a.tipo];
+  const evStr = cnt > 1 ? `${a.tipo} (${cnt})` : a.tipo;
+
+  const m = new google.maps.Marker({
+    position: {lat: a.lat, lng: a.lng},
+    map: S.map,
+    icon: carIcon(a),
+    title: a.placa
+  });
+  
+  const infowindow = new google.maps.InfoWindow({
+    content: `<div style="padding: 2px;"><b style="font-size:14px;letter-spacing:.05em;color:#1e293b">${a.placa}</b><br><span style="font-size:12px;color:#475569;font-weight:600;">${evStr}</span></div>`
+  });
+  
+  m.addListener("click", () => {
+    // PASSO 1: abre modal central, não painel lateral
+    S.sel = a.id;
+    openVehicleModal(a.id);
+    S.map.panTo(m.getPosition());
+    renderAll();
+  });
+  
+  S.markers[a.id] = { marker: m, info: infowindow };
+}
+
+function rmMarker(id){
+  if(S.markers[id] && S.markers[id].marker){
+    S.markers[id].marker.setMap(null);
+    delete S.markers[id];
+  }
+}
+
+function focusAlertOnMap(a){
+  if(a && S.map){
+    S.map.panTo({lat: a.lat, lng: a.lng});
+    S.map.setZoom(16);
+    if(S.markers[a.id]) S.markers[a.id].info.open(S.map, S.markers[a.id].marker);
+  }
+}
+
+function selAlert(id){S.sel=id;S.detailOpen=false;S.dtab='pos';renderAll();const a=S.alerts.find(x=>x.id===id&&x.alive);focusAlertOnMap(a);}
+
+function switchLayer(mode){
+  const bp=document.getElementById('btnPadrao'),bs=document.getElementById('btnSat');
+  if(mode==='std'){ if(S.map) S.map.setMapTypeId('roadmap'); bp.classList.add('on');bs.classList.remove('on'); } 
+  else { if(S.map) S.map.setMapTypeId('satellite'); bs.classList.add('on');bp.classList.remove('on'); }
+}
+
+function renderToastStack(){
+  const wrap=document.getElementById('toasts');
+  const list=alive().slice(0,5).sort((a,b)=>PW[a.pri.level]-PW[b.pri.level]||new Date(b.gpsAt)-new Date(a.gpsAt));
+  wrap.innerHTML=list.map(a=>{const cls=a.pri.level==='black'?'black':a.pri.level==='orange'?'orange':a.pri.level==='green'?'green':'red';return `<div class="toast ${cls}" onclick="selAlert('${a.id}')"><span class="ti">⊙</span><span class="tt">${a.tipo} | ${fT(a.gpsAt)} | ${a.placa}</span><span class="tx" onclick="event.stopPropagation();dismissToast('${a.id}')">×</span></div>`}).join('');
+}
+function dismissToast(id){const a=S.alerts.find(x=>x.id===id&&x.alive);if(a){a.alive=false;rmMarker(a.id);renderAll();}}
+function pushToast(a){renderToastStack();}
+
+function showToastMsg(msg, colorType = 'green') {
+    const wrap = document.getElementById('toasts');
+    const id = 't' + Date.now();
+    const icon = colorType === 'green' ? '✓' : (colorType === 'orange' ? '⧗' : '!');
+    const html = `<div id="${id}" class="toast ${colorType}" style="animation: toastIn 0.2s forwards; cursor: default;"><span class="ti">${icon}</span><span class="tt">${msg}</span><span class="tx" onclick="document.getElementById('${id}').remove()">×</span></div>`;
+    wrap.insertAdjacentHTML('afterbegin', html);
+    setTimeout(() => { const el = document.getElementById(id); if(el) el.remove(); }, 4000);
+}
+
+// LOGICA DE COMANDOS COM HISTORICO
+async function execCmd(cmd) {
+  const a = S.alerts.find(x => x.id === S.sel && x.alive);
+  if (!a) return;
+  await executeTrackerCommand(a, cmd, renderAll);
+}
+
+function followCurrent(){const a=S.alerts.find(x=>x.id===S.sel&&x.alive);if(a)focusAlertOnMap(a);}
+
+function initSplit(){
+  const sp=document.getElementById('splitter'),ws=document.getElementById('ws');
+  let drag=false;
+  sp.addEventListener('mousedown',()=>{drag=true;document.body.style.cursor='row-resize';});
+  window.addEventListener('mouseup',()=>{drag=false;document.body.style.cursor='';});
+  window.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    const r=ws.getBoundingClientRect(),top=Math.min(Math.max(e.clientY-r.top,180),r.height-200);
+    ws.style.gridTemplateRows=`${top}px 6px ${r.height-top-6}px`;
+  });
+}
+
+function presentationSequence(){
+  const vOrange = VH[0], vGreen1 = VH[1], vGreen2 = VH[2], vGreen3 = VH[3], vRed = VH[4], vCombo = VH[5];
+  const past=(m)=>new Date(Date.now()-m*60000);
+  [vGreen1,vGreen2,vGreen3].forEach(v=>{ hb(v.p).push({id:`h${S.seq++}`,kind:'raw',tipo:T_BAT,time:past(120),status:'closed'},{id:`h${S.seq++}`,kind:'raw',tipo:T_BAT,time:past(60), status:'closed'}); });
+
+  setTimeout(()=>createAlert(T_BAT, vOrange, now()), 800);
+
+  setTimeout(()=>createAlert(T_BAT, vGreen1, now()), 7000);
+  setTimeout(()=>createAlert(T_BAT, vGreen2, now()), 14000);
+  setTimeout(()=>createAlert(T_BAT, vGreen3, now()), 22000);
+  setTimeout(()=>{pushAlert(mkRaw(vCombo,T_BAT,now()),true);}, 38000);
+  setTimeout(()=>createAlert(T_BORD, vRed, now()), 40000);
+  setTimeout(()=>{createAlert(T_BORD, vCombo, now());setInterval(()=>createAlert(pick([T_BAT,T_BAT,T_BAT,T_BAT2,T_BORD,T_CUT,T_PREV]),pick(VH),now()),15000);}, 80000);
+}
+
+function bind(){
+  document.getElementById('btnPadrao').onclick=()=>switchLayer('std');
+  document.getElementById('btnSat').onclick=()=>switchLayer('sat');
+  document.getElementById('openTreatBtn').onclick=()=>{if(S.sel)openTreat(S.sel);};
+  const srchEl=document.getElementById('srch');
+  if(srchEl){srchEl.oninput=e=>{S.q=e.target.value;S.page=1;renderAll();};}
+  document.getElementById('pgSz').onchange=e=>{S.pgSz=+e.target.value;S.page=1;renderAll();};
+  document.getElementById('pPrev').onclick=()=>{if(S.page>1){S.page--;renderAll();}};
+  document.getElementById('pNext').onclick=()=>{S.page++;renderAll();};
+  document.getElementById('sB').onclick=()=>createAlert(T_BAT,pick(VH),now());
+  document.getElementById('sR').onclick=()=>createAlert(T_BORD,pick(VH),now());
+  document.getElementById('sC').onclick=()=>createAlert(T_CUT,pick(VH),now());
+
+  // Fechar commands menu ao clicar fora
+  document.addEventListener('click', e => {
+    const menu = document.getElementById('commandsMenu');
+    const btn = document.getElementById('cmdQuickBtn');
+    if (!menu.classList.contains('hidden') && !menu.contains(e.target) && e.target !== btn) {
+      menu.classList.add('hidden');
+    }
+  });
+}
+
+// ─── VEHICLE MODAL (clique no marcador) ────────────────────────────────────
+S.vmAlert = null;
+S.vmTab = 'pos';
+
+function openVehicleModal(alertId) {
+  const a = S.alerts.find(x => x.id === alertId && x.alive);
+  if (!a) return;
+  S.vmAlert = a;
+  S.vmTab = 'pos';
+  document.getElementById('vmPlate').textContent = a.placa;
+  document.getElementById('vmModel').textContent = a.modelo + ' · ' + a.cor;
+  document.querySelectorAll('.vehicle-tabs button').forEach(b => b.classList.remove('active'));
+  document.querySelector('.vehicle-tabs button').classList.add('active');
+  renderVehicleModal();
+  document.getElementById('vehicleModal').classList.remove('hidden');
+}
+
+function closeVehicleModal() {
+  document.getElementById('vehicleModal').classList.add('hidden');
+  S.vmAlert = null;
+}
+
+function vmTab(tab, el) {
+  S.vmTab = tab;
+  document.querySelectorAll('.vehicle-tabs button').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderVehicleModal();
+}
+
+function renderVehicleModal() {
+  const a = S.vmAlert;
+  if (!a) return;
+  const t = a.tel;
+  const el = document.getElementById('vmContent');
+  const tab = S.vmTab;
+
+  if (tab === 'pos') {
+    el.innerHTML = `<div class="vinfo-grid">
+      <div class="vinfo-cell"><div class="vinfo-label">Ignição</div><div class="vinfo-value ${t.ign?'on':'off'}">${t.ign?'LIGADA':'DESLIGADA'}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Velocidade</div><div class="vinfo-value big">${t.spd} <span style="font-size:14px;font-weight:500">km/h</span></div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Satélites</div><div class="vinfo-value big">${t.sat}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Bloqueio (S1)</div><div class="vinfo-value ${t.s1?'blocked':'on'}">${t.s1?'BLOQUEADO':'DESBLOQUEADO'}</div></div>
+      <div class="vinfo-cell full"><div class="vinfo-label">Endereço</div><div class="vinfo-value" style="white-space:normal;line-height:1.5">${a.addr}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Latitude</div><div class="vinfo-value" style="font-family:monospace;font-size:13px">${a.lat.toFixed(6)}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Longitude</div><div class="vinfo-value" style="font-family:monospace;font-size:13px">${a.lng.toFixed(6)}</div></div>
+    </div>`;
+  } else if (tab === 'cli') {
+    el.innerHTML = `<div class="vinfo-grid">
+      <div class="vinfo-cell full"><div class="vinfo-label">Nome / Razão Social</div><div class="vinfo-value">${a.cliente}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Telefone</div><div class="vinfo-value">(41) 99999-0000</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Status Financeiro</div><div class="vinfo-value on">Adimplente</div></div>
+      <div class="vinfo-cell full"><div class="vinfo-label">Endereço de Cobrança</div><div class="vinfo-value" style="white-space:normal">Rua Fictícia de Teste, 1000 - Curitiba/PR</div></div>
+    </div>`;
+  } else if (tab === 'vei') {
+    el.innerHTML = `<div class="vinfo-grid">
+      <div class="vinfo-cell full"><div class="vinfo-label">Modelo</div><div class="vinfo-value big">${a.modelo}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Ano</div><div class="vinfo-value big">${a.ano}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Cor</div><div class="vinfo-value big">${a.cor}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Placa</div><div class="vinfo-value" style="font-family:monospace;font-size:16px;letter-spacing:.1em">${a.placa}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Tipo</div><div class="vinfo-value">${a.tipo_v === 'moto' ? '🏍️ Moto' : a.tipo_v === 'caminhao' ? '🚛 Caminhão' : '🚗 Carro'}</div></div>
+      <div class="vinfo-cell full"><div class="vinfo-label">Chassi</div><div class="vinfo-value" style="font-family:monospace;font-size:13px">${a.chassi}</div></div>
+    </div>`;
+  } else if (tab === 'rastr') {
+    el.innerHTML = `<div class="vinfo-grid">
+      <div class="vinfo-cell"><div class="vinfo-label">Fabricante</div><div class="vinfo-value">${a.fab}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">IMEI</div><div class="vinfo-value" style="font-family:monospace;font-size:12px">${a.imei}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Bateria Interna</div><div class="vinfo-value big">${t.bat}<span style="font-size:14px;font-weight:500">%</span></div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Tensão Externa</div><div class="vinfo-value">${t.vlt}</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Sinal GSM</div><div class="vinfo-value">${t.gsm} / 4</div></div>
+      <div class="vinfo-cell"><div class="vinfo-label">Satélites GPS</div><div class="vinfo-value">${t.sat}</div></div>
+    </div>`;
+  } else if (tab === 'cmd') {
+    const hist = a.cmdHist || [];
+    el.innerHTML = `<div class="cmd-actions" style="grid-template-columns:1fr;gap:12px;margin-bottom:20px">
+      <button onclick="execVmCmd('BLOQUEAR')" style="height:44px;border:1px solid var(--border);border-radius:8px;background:#fef2f2;font:600 13px 'Inter';cursor:pointer;color:var(--c-red);transition:all .2s">🔒 BLOQUEAR VEÍCULO</button>
+      <button onclick="execVmCmd('DESBLOQUEAR')" style="height:44px;border:1px solid var(--border);border-radius:8px;background:#f0fdf4;font:600 13px 'Inter';cursor:pointer;color:#15803d;transition:all .2s">🔓 DESBLOQUEAR VEÍCULO</button>
+      <button onclick="execVmCmd('SOLICITAR POSIÇÃO')" style="height:44px;border:1px solid var(--border);border-radius:8px;background:#f0f9ff;font:600 13px 'Inter';cursor:pointer;color:#0369a1;transition:all .2s">📡 SOLICITAR POSIÇÃO</button>
+    </div>
+    <div style="font:600 10.5px 'Inter';color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Histórico de Comandos</div>
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:150px;overflow-y:auto">
+      ${hist.length ? hist.map(h=>`<div class="cmd-log-row"><span style="font-weight:600">${h.cmd}</span><span style="${h.status.includes('sucesso')?'color:var(--c-green)':'color:var(--c-orange)'};font-weight:500">${h.status} · ${fT(h.time)}</span></div>`).join('') : '<div style="padding:14px;text-align:center;color:var(--muted);font-size:12.5px">Nenhum comando registrado.</div>'}
+    </div>`;
+  }
+}
+
+async function execVmCmd(cmd) {
+  const a = S.vmAlert;
+  if (!a) return;
+  await executeTrackerCommand(a, cmd, () => {
+    renderVehicleModal();
+    renderTable();
+    renderDetail();
+  });
+}
+
+// ─── COMMANDS QUICK MENU ────────────────────────────────────────────────────
+function toggleCommands() {
+  document.getElementById('commandsMenu').classList.toggle('hidden');
+}
+
+async function quickCmd(cmd) {
+  document.getElementById('commandsMenu').classList.add('hidden');
+  const a = S.sel ? S.alerts.find(x => x.id === S.sel && x.alive) : null;
+  if (!a) { showToastMsg('Selecione um veículo na tabela primeiro.', 'orange'); return; }
+  showToastMsg(`Enviando comando ${cmd} para ${a.placa}...`, 'orange');
+  await executeTrackerCommand(a, cmd, () => {
+    renderTable();
+    renderDetail();
+    if (S.vmAlert?.id === a.id) renderVehicleModal();
+  });
+}
+initSplit();bind();renderAll();
+</script>
+
+<!-- VEHICLE MODAL — abre ao clicar no marcador do mapa -->
+<div id="vehicleModal" class="vehicle-modal hidden">
+  <div class="vehicle-box">
+    <div class="vehicle-header">
+      <div class="vehicle-header-left">
+        <div>
+          <div class="vehicle-plate" id="vmPlate">—</div>
+          <div class="vehicle-model" id="vmModel">—</div>
+        </div>
+      </div>
+      <button class="vehicle-close" onclick="closeVehicleModal()">×</button>
+    </div>
+    <div class="vehicle-tabs">
+      <button class="active" onclick="vmTab('pos',this)">POSIÇÃO</button>
+      <button onclick="vmTab('cli',this)">CLIENTE</button>
+      <button onclick="vmTab('vei',this)">VEÍCULO</button>
+      <button onclick="vmTab('rastr',this)">RASTREADOR</button>
+      <button onclick="vmTab('cmd',this)">COMANDOS</button>
+    </div>
+    <div class="vehicle-content" id="vmContent"></div>
+  </div>
+</div>
+
+<!-- COMMANDS FLOATING MENU -->
+<div id="commandsMenu" class="commands-menu hidden">
+  <button onclick="quickCmd('BLOQUEAR')"><span class="cmd-icon">🔒</span> BLOQUEAR</button>
+  <button onclick="quickCmd('DESBLOQUEAR')"><span class="cmd-icon">🔓</span> DESBLOQUEAR</button>
+  <button onclick="quickCmd('RESET')"><span class="cmd-icon">🔄</span> RESET</button>
+  <button onclick="quickCmd('SOLICITAR POSIÇÃO')"><span class="cmd-icon">📡</span> POSIÇÃO</button>
+</div>
+</body>
+</html>

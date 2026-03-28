@@ -40,9 +40,10 @@ resource "aws_lambda_function" "command_handler" {
 
   environment {
     variables = {
-      TRACKER_TABLE_NAME = aws_dynamodb_table.trackers.name
-      HISTORY_TABLE_NAME = aws_dynamodb_table.tracker_history.name
-      LOG_LEVEL          = var.log_level
+      TRACKER_TABLE_NAME   = aws_dynamodb_table.trackers.name
+      HISTORY_TABLE_NAME   = aws_dynamodb_table.tracker_history.name
+      TELEMETRY_TABLE_NAME = aws_dynamodb_table.tracker_telemetry.name
+      LOG_LEVEL            = var.log_level
     }
   }
 
@@ -69,9 +70,10 @@ resource "aws_lambda_function" "simulator" {
 
   environment {
     variables = {
-      TRACKER_TABLE_NAME = aws_dynamodb_table.trackers.name
-      HISTORY_TABLE_NAME = aws_dynamodb_table.tracker_history.name
-      LOG_LEVEL          = var.log_level
+      TRACKER_TABLE_NAME   = aws_dynamodb_table.trackers.name
+      HISTORY_TABLE_NAME   = aws_dynamodb_table.tracker_history.name
+      TELEMETRY_TABLE_NAME = aws_dynamodb_table.tracker_telemetry.name
+      LOG_LEVEL            = var.log_level
     }
   }
 

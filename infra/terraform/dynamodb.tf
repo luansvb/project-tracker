@@ -33,3 +33,24 @@ resource "aws_dynamodb_table" "tracker_history" {
     Name = local.tracker_history_table_name
   })
 }
+
+resource "aws_dynamodb_table" "tracker_telemetry" {
+  name         = "${local.prefix}-tracker-telemetry"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "tracker_id"
+  range_key    = "recorded_at"
+
+  attribute {
+    name = "tracker_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "recorded_at"
+    type = "S"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.prefix}-tracker-telemetry"
+  })
+}

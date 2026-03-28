@@ -47,6 +47,12 @@ resource "aws_apigatewayv2_route" "get_tracker_history" {
   target    = "integrations/${aws_apigatewayv2_integration.command_handler.id}"
 }
 
+resource "aws_apigatewayv2_route" "get_tracker_positions" {
+  api_id    = aws_apigatewayv2_api.tracker_api.id
+  route_key = "GET /trackers/{tracker_id}/positions"
+  target    = "integrations/${aws_apigatewayv2_integration.command_handler.id}"
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.tracker_api.id
   name        = "$default"
